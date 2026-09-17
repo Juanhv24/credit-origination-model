@@ -17,3 +17,7 @@ _entregables_originales/
 __pycache__/
 .venv/
 venv/
+
+# La curva de politica son tasas agregadas: si se publica
+!curva_politica_corte.csv
+!umbrales_recomendados.csv

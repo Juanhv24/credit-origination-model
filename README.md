@@ -7,6 +7,20 @@
 
 ---
 
+## Interactive cutoff calculator
+
+A model returns a score; a credit policy returns a decision. The threshold is what connects them.
+This panel walks every threshold over the out-of-time cohort and shows the operating consequences
+of each one — approval rate, observed delinquency inside the approved population, recall and
+precision — for both V1 and V2.
+
+**→ [Open the calculator](https://juanhv24.github.io/credit-origination-model/)**
+
+It also makes two findings visible that the metrics tables hide: V1's scores collapse into a
+two-hundredths band, and a threshold computed on one model cannot be carried over to the other.
+
+---
+
 ## Project Overview
 
 This project covers the full credit risk modeling pipeline for a consumer lending product — from raw data exploration through model deployment decisions. It includes an ethical AI analysis comparing a full-feature model against a gender-blind version, and a rigorous external vendor comparison using bootstrap confidence intervals.
@@ -29,16 +43,47 @@ This project covers the full credit risk modeling pipeline for a consumer lendin
 | Model | AUC-ROC | GINI |
 |-------|---------|------|
 | V1 — Full features (incl. Gender) | 0.6267 | 25.34% |
-| V2 — Ethical (Gender excluded) | 0.617 | 23.4% |
+| V2 — Ethical (Gender excluded) | 0.6169 | 23.38% |
 
-> A **1.94 pp GINI drop** from removing Gender — a modest performance cost for a significantly fairer credit decision system.
+> A **1.96 pp GINI drop** from removing Gender — a modest performance cost for a significantly fairer credit decision system.
 
-### Cutoff Analysis
+### Cutoff Analysis — Model V1
 
 | Criterion | Threshold | Precision | Recall | F1 | Approval Rate |
 |-----------|-----------|-----------|--------|----|---------------|
 | Max F1-Score | 0.1306 | 11.7% | 71.4% | 0.201 | 44% |
 | Youden J (risk-focused) | 0.1296 | 11.5% | 71.4% | 0.197 | 42.9% |
+
+### Cutoff Analysis — Model V2
+
+A threshold belongs to the score distribution it was estimated on. V1's cutoff (0.1296) falls below
+V2's score range and rejects the entire population, so it was recalculated on V2's own validation
+set. Both criteria converge on 0.4532 — which is a well-computed statistic and a poor policy:
+
+| Threshold | Approval Rate | Recall | Delinquency among approved |
+|-----------|---------------|--------|----------------------------|
+| 0.4532 (statistical optimum) | 77.8% | 35.7% | 7.56% |
+| 0.3350 (risk-focused) | 42.0% | 73.8% | 5.70% |
+
+Baseline delinquency with no model is 9.15%. At its own optimum V2 lets two thirds of the
+delinquent accounts through for a 1.6-point improvement. Youden's J implicitly prices a false
+positive and a false negative equally, which origination does not: approving a defaulter costs
+capital, rejecting a good applicant costs margin. The threshold is a risk-appetite decision, not a
+statistical one — which is what the calculator above is for.
+
+### Known limitations
+
+- **V1 is effectively a single tree.** Early stopping fixed `best_iteration=1`: the selected
+  hyperparameters (`num_leaves=86`, `max_depth=9`) overfit 3,084 records immediately, so boosting
+  contributed nothing. V1's probabilities collapse into a two-hundredths band, which makes its
+  cutoff extremely sensitive. Constraining the search space is the natural fix.
+- **Small out-of-time cohort.** The test set holds 459 records with roughly 42 delinquent accounts,
+  so one- or two-point differences in recall are sampling noise.
+- **Structural signal ceiling.** After removing leakage, no individual feature correlates above 0.10
+  with the target. Improving beyond this range requires richer data, not a better algorithm.
+- **Proxy risk after removing gender.** SHAP places academic level fourth in importance; in the
+  Colombian context it correlates with socioeconomic status and may act as a proxy. Quarterly
+  monitoring of approval rate by education level is recommended.
 
 ### External Vendor Benchmarking
 

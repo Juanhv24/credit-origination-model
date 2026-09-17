@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Panel interactivo de politica de corte para un modelo de originacion crediticia.">
+<style>:root{color-scheme:light dark}html,body{margin:0}img{max-width:100%}</style>
+<title>Umbral de Originación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#EFF2F2; --surface:#FFFFFF; --surface-2:#F7F9F9;
+  --ink:#152329; --muted:#5C7078; --faint:#8699A0;
+  --line:#D9E1E1; --line-strong:#BCC9C9;
+  --accent:#12695F; --accent-soft:#D6E7E4;
+  --good:#2C7A4D; --bad:#B94A32; --warn:#9A6A12;
+  --shadow:0 1px 2px rgba(20,40,45,.06),0 8px 24px -12px rgba(20,40,45,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1417; --surface:#131E22; --surface-2:#18252A;
+    --ink:#E7EFF0; --muted:#8CA2A8; --faint:#6B828A;
+    --line:#233238; --line-strong:#32454C;
+    --accent:#4FB8AC; --accent-soft:#12312F;
+    --good:#4FAE74; --bad:#E0755A; --warn:#CE9B36;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1417; --surface:#131E22; --surface-2:#18252A;
+  --ink:#E7EFF0; --muted:#8CA2A8; --faint:#6B828A;
+  --line:#233238; --line-strong:#32454C;
+  --accent:#4FB8AC; --accent-soft:#12312F;
+  --good:#4FAE74; --bad:#E0755A; --warn:#CE9B36;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{background:var(--ground);color:var(--ink);
+  font-family:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  margin:0;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px;padding-block:32px 56px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+
+header{margin-bottom:28px}
+.eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+h1{font-size:clamp(26px,4.6vw,38px);font-weight:600;letter-spacing:-.02em;line-height:1.1;margin:0;text-wrap:balance}
+.lede{margin:12px 0 0;color:var(--muted);font-size:16px;max-width:62ch}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
+.controls{padding:20px;margin-bottom:18px}
+.ctl-top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+.field{display:flex;flex-direction:column;gap:7px;min-width:0}
+label{font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
+
+.seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:3px;gap:3px}
+.seg button{font:inherit;font-size:13.5px;font-weight:500;color:var(--muted);background:none;border:0;
+  padding:7px 14px;border-radius:5px;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.thr-val{font-size:30px;font-weight:600;letter-spacing:-.01em;line-height:1}
+input[type=range]{width:100%;accent-color:var(--accent);height:26px;cursor:pointer}
+input[type=range]:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.slider-row{margin-top:16px}
+.ticks{display:flex;justify-content:space-between;font-size:11.5px;color:var(--faint);margin-top:-2px}
+
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.preset{font:inherit;font-size:12.5px;color:var(--muted);background:var(--surface-2);
+  border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer}
+.preset:hover{border-color:var(--line-strong);color:var(--ink)}
+.preset:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.preset .mono{color:var(--faint);margin-left:3px}
+.notes-3{grid-template-columns:repeat(3,1fr)}
+@media (max-width:980px){.notes-3{grid-template-columns:1fr}}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:15px 16px}
+.tile.lead{border-color:var(--line-strong);background:var(--surface-2)}
+.tile h3{margin:0;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--faint)}
+.tile .v{font-size:27px;font-weight:600;letter-spacing:-.015em;margin-top:9px;line-height:1}
+.tile .sub{font-size:12.5px;color:var(--muted);margin-top:6px;min-height:1.2em}
+.v.good{color:var(--good)} .v.bad{color:var(--bad)}
+
+.charts{padding:20px;margin-bottom:18px}
+.chart-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px}
+.chart-head h2{font-size:14px;font-weight:600;margin:0}
+.chart-head .note{font-size:12px;color:var(--faint)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.gridline{stroke:var(--line);stroke-width:1}
+.axis-txt{fill:var(--faint);font-size:10.5px;font-family:'IBM Plex Mono',monospace}
+.cursor-line{stroke:var(--ink);stroke-width:1;stroke-dasharray:3 3;opacity:.5}
+.base-line{stroke:var(--bad);stroke-width:1.5;stroke-dasharray:5 4}
+
+.volume{padding:20px;margin-bottom:18px}
+.vol-grid{display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:center}
+input[type=number]{font:inherit;font-family:'IBM Plex Mono',monospace;font-size:17px;width:100%;
+  padding:9px 11px;border:1px solid var(--line-strong);border-radius:7px;background:var(--surface-2);color:var(--ink)}
+input[type=number]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.vol-out{display:flex;flex-wrap:wrap;gap:10px}
+.chip{background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:9px 13px;flex:1 1 150px}
+.chip .k{font-size:11.5px;color:var(--faint)}
+.chip .n{font-size:19px;font-weight:600;margin-top:3px}
+
+.notes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.note-card{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--warn);
+  border-radius:8px;padding:15px 16px}
+.note-card h3{margin:0 0 7px;font-size:13.5px;font-weight:600}
+.note-card p{margin:0;font-size:13.5px;color:var(--muted)}
+.note-card code{font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:var(--surface-2);padding:1px 4px;border-radius:3px}
+
+footer{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--faint)}
+footer p{margin:0 0 5px}
+
+@media (max-width:760px){
+  .tiles{grid-template-columns:repeat(2,1fr)}
+  .notes{grid-template-columns:1fr}
+  .vol-grid{grid-template-columns:1fr}
+  .ctl-top{align-items:stretch}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <p class="eyebrow">Modelo de originación · prueba OOT, cohorte 2018</p>
+  <h1>Umbral de Originación</h1>
+  <p class="lede">Un modelo de scoring entrega un puntaje; una política de crédito entrega una decisión.
+  Lo que traduce uno en otro es el umbral. Este panel recorre todos los umbrales posibles sobre el
+  conjunto fuera de tiempo y muestra qué implica cada uno.</p>
+</header>
+
+<section class="panel controls">
+  <div class="ctl-top">
+    <div class="field">
+      <label for="modelo">Modelo</label>
+      <div class="seg" id="modelo" role="group" aria-label="Selección de modelo">
+        <button type="button" id="btn-v2" aria-pressed="true">V2 — sin género</button>
+        <button type="button" id="btn-v1" aria-pressed="false">V1 — con género</button>
+      </div>
+    </div>
+    <div class="field" style="text-align:right">
+      <label for="thr">Umbral de rechazo</label>
+      <div class="thr-val mono" id="thr-val">0.335</div>
+    </div>
+  </div>
+  <div class="slider-row">
+    <input type="range" id="thr" min="0" max="116" value="63" step="1"
+           aria-label="Umbral de decisión" aria-describedby="thr-val">
+    <div class="ticks mono"><span>0.020</span><span>0.310</span><span>0.600</span></div>
+    <div class="presets" id="presets" aria-label="Umbrales candidatos"></div>
+  </div>
+</section>
+
+<section class="tiles">
+  <div class="tile lead">
+    <h3>Mora en aprobados</h3>
+    <div class="v mono" id="t-mora">—</div>
+    <div class="sub" id="t-mora-sub"></div>
+  </div>
+  <div class="tile">
+    <h3>Tasa de aprobación</h3>
+    <div class="v mono" id="t-apr">—</div>
+    <div class="sub" id="t-apr-sub"></div>
+  </div>
+  <div class="tile">
+    <h3>Recall sobre morosos</h3>
+    <div class="v mono" id="t-rec">—</div>
+    <div class="sub" id="t-rec-sub"></div>
+  </div>
+  <div class="tile">
+    <h3>Precisión</h3>
+    <div class="v mono" id="t-pre">—</div>
+    <div class="sub" id="t-pre-sub"></div>
+  </div>
+</section>
+
+<section class="panel charts">
+  <div class="chart-head">
+    <h2>Tasa de aprobación</h2>
+    <span class="note">porcentaje de solicitudes que pasan el filtro</span>
+  </div>
+  <svg id="chart-apr" viewBox="0 0 700 150" role="img" aria-label="Tasa de aprobación según el umbral"></svg>
+  <div class="chart-head" style="margin-top:20px">
+    <h2>Mora observada dentro de los aprobados</h2>
+    <span class="note">línea punteada: 9.15% sin modelo</span>
+  </div>
+  <svg id="chart-mora" viewBox="0 0 700 150" role="img" aria-label="Mora entre aprobados según el umbral"></svg>
+</section>
+
+<section class="panel volume">
+  <div class="vol-grid">
+    <div class="field">
+      <label for="vol">Solicitudes por mes</label>
+      <input type="number" id="vol" value="10000" min="1" max="10000000" step="100">
+    </div>
+    <div class="vol-out">
+      <div class="chip"><div class="k">Créditos otorgados</div><div class="n mono" id="v-apr">—</div></div>
+      <div class="chip"><div class="k">Caen en mora entre ellos</div><div class="n mono" id="v-mora">—</div></div>
+      <div class="chip"><div class="k">Morosos evitados</div><div class="n mono" id="v-evit">—</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="notes notes-3">
+  <div class="note-card">
+    <h3>V1 no admite una política estable</h3>
+    <p>El early stopping fijó <code>best_iteration=1</code>, así que V1 opera como un único árbol y sus
+    probabilidades se concentran entre 0.12 y 0.14. Mueve el umbral a V1 y compruébalo: fuera de esa
+    banda de dos centésimas, aprueba a todos o a nadie.</p>
+  </div>
+  <div class="note-card">
+    <h3>El óptimo estadístico no es la política</h3>
+    <p>En su propio óptimo (0.4532, donde F1 y Youden coinciden), V2 aprueba a cerca del 78% y deja pasar
+    dos tercios de los morosos: la mora baja de 9.15% a 7.56%. Youden maximiza sensibilidad más
+    especificidad, que es un criterio estadístico, no una postura frente al riesgo. Compáralo con
+    0.3350 y decide con la curva, no con el estadístico.</p>
+  </div>
+  <div class="note-card">
+    <h3>Un umbral no se hereda entre modelos</h3>
+    <p>El corte publicado de 0.1296 se calculó sobre la validación de V1. Aplicado a V2 rechaza al
+    100% de la población, porque los dos modelos puntúan en escalas distintas. V2 necesita su propio
+    corte, recalculado sobre sus propias predicciones.</p>
+  </div>
+</section>
+
+<footer>
+  <p>Curva calculada sobre la cohorte de prueba fuera de tiempo. La mora base sin modelo —aprobar a
+  todos— es de 9.15%. El conjunto de prueba es pequeño, así que diferencias de uno o dos puntos de
+  recall equivalen a un puñado de créditos y caen dentro del ruido muestral.</p>
+  <p>Los datos subyacentes son propiedad de la entidad que emitió la prueba técnica y no se publican:
+  este panel contiene únicamente tasas agregadas.</p>
+</footer>
+</div>
+<script>
+(function(){
+"use strict";
+var D = {"v1":[[0.02,0.0,0.0,1.0,0.0915],[0.025,0.0,0.0,1.0,0.0915],[0.03,0.0,0.0,1.0,0.0915],[0.035,0.0,0.0,1.0,0.0915],[0.04,0.0,0.0,1.0,0.0915],[0.045,0.0,0.0,1.0,0.0915],[0.05,0.0,0.0,1.0,0.0915],[0.055,0.0,0.0,1.0,0.0915],[0.06,0.0,0.0,1.0,0.0915],[0.065,0.0,0.0,1.0,0.0915],[0.07,0.0,0.0,1.0,0.0915],[0.075,0.0,0.0,1.0,0.0915],[0.08,0.0,0.0,1.0,0.0915],[0.085,0.0,0.0,1.0,0.0915],[0.09,0.0,0.0,1.0,0.0915],[0.095,0.0,0.0,1.0,0.0915],[0.1,0.0,0.0,1.0,0.0915],[0.105,0.0,0.0,1.0,0.0915],[0.11,0.0,0.0,1.0,0.0915],[0.115,0.0,0.0,1.0,0.0915],[0.12,0.18301,0.07143,0.85714,0.096],[0.125,0.27887,0.07031,0.78571,0.0997],[0.13,0.44009,0.05941,0.71429,0.11673],[0.135,0.77996,0.06145,0.47619,0.19802],[0.14,0.9281,0.08451,0.14286,0.18182],[0.145,1.0,0.0915,0.0,0.0],[0.15,1.0,0.0915,0.0,0.0],[0.155,1.0,0.0915,0.0,0.0],[0.16,1.0,0.0915,0.0,0.0],[0.165,1.0,0.0915,0.0,0.0],[0.17,1.0,0.0915,0.0,0.0],[0.175,1.0,0.0915,0.0,0.0],[0.18,1.0,0.0915,0.0,0.0],[0.185,1.0,0.0915,0.0,0.0],[0.19,1.0,0.0915,0.0,0.0],[0.195,1.0,0.0915,0.0,0.0],[0.2,1.0,0.0915,0.0,0.0],[0.205,1.0,0.0915,0.0,0.0],[0.21,1.0,0.0915,0.0,0.0],[0.215,1.0,0.0915,0.0,0.0],[0.22,1.0,0.0915,0.0,0.0],[0.225,1.0,0.0915,0.0,0.0],[0.23,1.0,0.0915,0.0,0.0],[0.235,1.0,0.0915,0.0,0.0],[0.24,1.0,0.0915,0.0,0.0],[0.245,1.0,0.0915,0.0,0.0],[0.25,1.0,0.0915,0.0,0.0],[0.255,1.0,0.0915,0.0,0.0],[0.26,1.0,0.0915,0.0,0.0],[0.265,1.0,0.0915,0.0,0.0],[0.27,1.0,0.0915,0.0,0.0],[0.275,1.0,0.0915,0.0,0.0],[0.28,1.0,0.0915,0.0,0.0],[0.285,1.0,0.0915,0.0,0.0],[0.29,1.0,0.0915,0.0,0.0],[0.295,1.0,0.0915,0.0,0.0],[0.3,1.0,0.0915,0.0,0.0],[0.305,1.0,0.0915,0.0,0.0],[0.31,1.0,0.0915,0.0,0.0],[0.315,1.0,0.0915,0.0,0.0],[0.32,1.0,0.0915,0.0,0.0],[0.325,1.0,0.0915,0.0,0.0],[0.33,1.0,0.0915,0.0,0.0],[0.335,1.0,0.0915,0.0,0.0],[0.34,1.0,0.0915,0.0,0.0],[0.345,1.0,0.0915,0.0,0.0],[0.35,1.0,0.0915,0.0,0.0],[0.355,1.0,0.0915,0.0,0.0],[0.36,1.0,0.0915,0.0,0.0],[0.365,1.0,0.0915,0.0,0.0],[0.37,1.0,0.0915,0.0,0.0],[0.375,1.0,0.0915,0.0,0.0],[0.38,1.0,0.0915,0.0,0.0],[0.385,1.0,0.0915,0.0,0.0],[0.39,1.0,0.0915,0.0,0.0],[0.395,1.0,0.0915,0.0,0.0],[0.4,1.0,0.0915,0.0,0.0],[0.405,1.0,0.0915,0.0,0.0],[0.41,1.0,0.0915,0.0,0.0],[0.415,1.0,0.0915,0.0,0.0],[0.42,1.0,0.0915,0.0,0.0],[0.425,1.0,0.0915,0.0,0.0],[0.43,1.0,0.0915,0.0,0.0],[0.435,1.0,0.0915,0.0,0.0],[0.44,1.0,0.0915,0.0,0.0],[0.445,1.0,0.0915,0.0,0.0],[0.45,1.0,0.0915,0.0,0.0],[0.455,1.0,0.0915,0.0,0.0],[0.46,1.0,0.0915,0.0,0.0],[0.465,1.0,0.0915,0.0,0.0],[0.47,1.0,0.0915,0.0,0.0],[0.475,1.0,0.0915,0.0,0.0],[0.48,1.0,0.0915,0.0,0.0],[0.485,1.0,0.0915,0.0,0.0],[0.49,1.0,0.0915,0.0,0.0],[0.495,1.0,0.0915,0.0,0.0],[0.5,1.0,0.0915,0.0,0.0],[0.505,1.0,0.0915,0.0,0.0],[0.51,1.0,0.0915,0.0,0.0],[0.515,1.0,0.0915,0.0,0.0],[0.52,1.0,0.0915,0.0,0.0],[0.525,1.0,0.0915,0.0,0.0],[0.53,1.0,0.0915,0.0,0.0],[0.535,1.0,0.0915,0.0,0.0],[0.54,1.0,0.0915,0.0,0.0],[0.545,1.0,0.0915,0.0,0.0],[0.55,1.0,0.0915,0.0,0.0],[0.555,1.0,0.0915,0.0,0.0],[0.56,1.0,0.0915,0.0,0.0],[0.565,1.0,0.0915,0.0,0.0],[0.57,1.0,0.0915,0.0,0.0],[0.575,1.0,0.0915,0.0,0.0],[0.58,1.0,0.0915,0.0,0.0],[0.585,1.0,0.0915,0.0,0.0],[0.59,1.0,0.0915,0.0,0.0],[0.595,1.0,0.0915,0.0,0.0],[0.6,1.0,0.0915,0.0,0.0]],"v2":[[0.02,0.0,0.0,1.0,0.0915],[0.025,0.0,0.0,1.0,0.0915],[0.03,0.0,0.0,1.0,0.0915],[0.035,0.0,0.0,1.0,0.0915],[0.04,0.0,0.0,1.0,0.0915],[0.045,0.0,0.0,1.0,0.0915],[0.05,0.0,0.0,1.0,0.0915],[0.055,0.0,0.0,1.0,0.0915],[0.06,0.0,0.0,1.0,0.0915],[0.065,0.0,0.0,1.0,0.0915],[0.07,0.0,0.0,1.0,0.0915],[0.075,0.0,0.0,1.0,0.0915],[0.08,0.0,0.0,1.0,0.0915],[0.085,0.0,0.0,1.0,0.0915],[0.09,0.0,0.0,1.0,0.0915],[0.095,0.0,0.0,1.0,0.0915],[0.1,0.0,0.0,1.0,0.0915],[0.105,0.0,0.0,1.0,0.0915],[0.11,0.0,0.0,1.0,0.0915],[0.115,0.0,0.0,1.0,0.0915],[0.12,0.0,0.0,1.0,0.0915],[0.125,0.0,0.0,1.0,0.0915],[0.13,0.0,0.0,1.0,0.0915],[0.135,0.0,0.0,1.0,0.0915],[0.14,0.0,0.0,1.0,0.0915],[0.145,0.00218,0.0,1.0,0.0917],[0.15,0.00436,0.0,1.0,0.0919],[0.155,0.00436,0.0,1.0,0.0919],[0.16,0.00871,0.0,1.0,0.09231],[0.165,0.00871,0.0,1.0,0.09231],[0.17,0.01089,0.0,1.0,0.09251],[0.175,0.01307,0.0,1.0,0.09272],[0.18,0.01743,0.0,1.0,0.09313],[0.185,0.01961,0.11111,0.97619,0.09111],[0.19,0.01961,0.11111,0.97619,0.09111],[0.195,0.02179,0.1,0.97619,0.09131],[0.2,0.02832,0.07692,0.97619,0.09193],[0.205,0.03486,0.0625,0.97619,0.09255],[0.21,0.04793,0.04545,0.97619,0.09382],[0.215,0.05664,0.03846,0.97619,0.09469],[0.22,0.06972,0.03125,0.97619,0.09602],[0.225,0.08279,0.02632,0.97619,0.09739],[0.23,0.08715,0.025,0.97619,0.09785],[0.235,0.1024,0.06383,0.92857,0.09466],[0.24,0.10675,0.06122,0.92857,0.09512],[0.245,0.11765,0.05556,0.92857,0.0963],[0.25,0.13725,0.06349,0.90476,0.09596],[0.255,0.16122,0.06757,0.88095,0.0961],[0.26,0.17865,0.06098,0.88095,0.09814],[0.265,0.1939,0.06742,0.85714,0.0973],[0.27,0.20261,0.06452,0.85714,0.09836],[0.275,0.21351,0.07143,0.83333,0.09695],[0.28,0.21786,0.07,0.83333,0.09749],[0.285,0.23094,0.06604,0.83333,0.09915],[0.29,0.24183,0.06306,0.83333,0.10057],[0.295,0.26797,0.05691,0.83333,0.10417],[0.3,0.27887,0.05469,0.83333,0.10574],[0.305,0.28322,0.05385,0.83333,0.10638],[0.31,0.2963,0.05147,0.83333,0.10836],[0.315,0.32244,0.05405,0.80952,0.10932],[0.32,0.35294,0.05556,0.78571,0.11111],[0.325,0.38562,0.0565,0.7619,0.11348],[0.33,0.40305,0.05405,0.7619,0.11679],[0.335,0.42048,0.05699,0.7381,0.11654],[0.34,0.44009,0.05941,0.71429,0.11673],[0.345,0.45534,0.0622,0.69048,0.116],[0.35,0.47495,0.05963,0.69048,0.12033],[0.355,0.49237,0.05752,0.69048,0.12446],[0.36,0.51634,0.05485,0.69048,0.13063],[0.365,0.53595,0.05691,0.66667,0.13146],[0.37,0.5512,0.05929,0.64286,0.13107],[0.375,0.55991,0.05837,0.64286,0.13366],[0.38,0.56863,0.05747,0.64286,0.13636],[0.385,0.59041,0.06273,0.59524,0.13298],[0.39,0.61002,0.06429,0.57143,0.13408],[0.395,0.62745,0.06597,0.54762,0.1345],[0.4,0.63617,0.06507,0.54762,0.13772],[0.405,0.64924,0.06376,0.54762,0.14286],[0.41,0.66013,0.06601,0.52381,0.14103],[0.415,0.67538,0.06774,0.5,0.14094],[0.42,0.69281,0.07233,0.45238,0.13475],[0.425,0.70588,0.07407,0.42857,0.13333],[0.43,0.72331,0.07229,0.42857,0.14173],[0.435,0.73856,0.07375,0.40476,0.14167],[0.44,0.74292,0.07331,0.40476,0.14407],[0.445,0.76253,0.07429,0.38095,0.14679],[0.45,0.77342,0.07606,0.35714,0.14423],[0.455,0.78431,0.07778,0.33333,0.14141],[0.46,0.79521,0.07671,0.33333,0.14894],[0.465,0.80392,0.07588,0.33333,0.15556],[0.47,0.81699,0.08,0.28571,0.14286],[0.475,0.81917,0.07979,0.28571,0.14458],[0.48,0.82135,0.07958,0.28571,0.14634],[0.485,0.82789,0.07895,0.28571,0.1519],[0.49,0.83224,0.08115,0.2619,0.14286],[0.495,0.8366,0.08073,0.2619,0.14667],[0.5,0.84749,0.0874,0.19048,0.11429],[0.505,0.8671,0.08794,0.16667,0.11475],[0.51,0.88453,0.08867,0.14286,0.11321],[0.515,0.89542,0.08759,0.14286,0.125],[0.52,0.91068,0.08612,0.14286,0.14634],[0.525,0.91503,0.08571,0.14286,0.15385],[0.53,0.91939,0.08531,0.14286,0.16216],[0.535,0.9281,0.09155,0.07143,0.09091],[0.54,0.93246,0.09112,0.07143,0.09677],[0.545,0.93682,0.0907,0.07143,0.10345],[0.55,0.94118,0.09028,0.07143,0.11111],[0.555,0.94989,0.09174,0.04762,0.08696],[0.56,0.95425,0.09132,0.04762,0.09524],[0.565,0.95643,0.09112,0.04762,0.1],[0.57,0.96296,0.09276,0.02381,0.05882],[0.575,0.96732,0.09234,0.02381,0.06667],[0.58,0.96732,0.09234,0.02381,0.06667],[0.585,0.9695,0.09213,0.02381,0.07143],[0.59,0.97603,0.09152,0.02381,0.09091],[0.595,0.97821,0.09131,0.02381,0.1],[0.6,0.98039,0.09111,0.02381,0.11111]],"moraBase":0.0915};
+var MB = D.moraBase;
+var cur = "v2", idx = 63;
+var REFS = {
+  v1: [{t:0.1296, l:"Youden V1"}, {t:0.1306, l:"F1 V1"}],
+  v2: [{t:0.4532, l:"Óptimo estadístico"}, {t:0.3350, l:"Foco en riesgo"}]
+};
+function nearestIdx(rows, t){
+  var bi = 0, bd = Infinity;
+  rows.forEach(function(r,i){ var d = Math.abs(r[0]-t); if(d < bd){ bd = d; bi = i; } });
+  return bi;
+}
+
+var $ = function(id){ return document.getElementById(id); };
+var pct = function(x,d){ return (x*100).toFixed(d===undefined?1:d) + "%"; };
+var thousands = function(n){ return Math.round(n).toLocaleString("es-CO"); };
+
+// ---- charts -------------------------------------------------------------
+var W=700,H=150,ML=44,MR=10,MT=12,MB2=24;
+var IW=W-ML-MR, IH=H-MT-MB2;
+
+function xOf(t){ return ML + (t-0.02)/(0.60-0.02)*IW; }
+
+function draw(svg, rows, valIdx, yMax, fmtY, baseVal, color, maskEmpty){
+  var yOf = function(v){ return MT + IH - (v/yMax)*IH; };
+  var s = "";
+  // gridlines + y labels
+  for(var i=0;i<=3;i++){
+    var v = yMax*i/3, y = yOf(v);
+    s += '<line class="gridline" x1="'+ML+'" y1="'+y.toFixed(1)+'" x2="'+(W-MR)+'" y2="'+y.toFixed(1)+'"/>';
+    s += '<text class="axis-txt" x="'+(ML-7)+'" y="'+(y+3.5).toFixed(1)+'" text-anchor="end">'+fmtY(v)+'</text>';
+  }
+  // x labels
+  [0.02,0.16,0.31,0.45,0.60].forEach(function(t){
+    s += '<text class="axis-txt" x="'+xOf(t).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle">'+t.toFixed(2)+'</text>';
+  });
+  // marcas de referencia (umbrales candidatos del modelo activo)
+  REFS[cur].forEach(function(ref){
+    var rx = xOf(ref.t);
+    if(rx < ML || rx > W-MR) return;
+    s += '<line x1="'+rx.toFixed(1)+'" y1="'+MT+'" x2="'+rx.toFixed(1)+'" y2="'+(MT+IH)+'" stroke="var(--line-strong)" stroke-width="1"/>';
+  });
+  // base reference
+  if(baseVal !== null){
+    var yb = yOf(baseVal);
+    s += '<line class="base-line" x1="'+ML+'" y1="'+yb.toFixed(1)+'" x2="'+(W-MR)+'" y2="'+yb.toFixed(1)+'"/>';
+  }
+  // area + line
+  // Los umbrales que no aprueban a nadie no tienen mora observable: se omiten
+  // en lugar de dibujarse como cero, que seria un artefacto de calculo.
+  var vis = rows.filter(function(r){ return !maskEmpty || r[1] > 0; });
+  if(vis.length > 1){
+    var dLine = "";
+    vis.forEach(function(r,i){
+      var x = xOf(r[0]).toFixed(1), y = yOf(Math.min(r[valIdx], yMax)).toFixed(1);
+      dLine += (i? "L":"M") + x + " " + y;
+    });
+    var dArea = dLine + "L" + xOf(vis[vis.length-1][0]).toFixed(1) + " " + (MT+IH) +
+                "L" + xOf(vis[0][0]).toFixed(1) + " " + (MT+IH) + "Z";
+    s += '<path d="'+dArea+'" fill="'+color+'" fill-opacity="0.12" stroke="none"/>';
+    s += '<path d="'+dLine+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round"/>';
+  }
+  // cursor
+  var row = rows[idx], cx = xOf(row[0]);
+  s += '<line class="cursor-line" x1="'+cx.toFixed(1)+'" y1="'+MT+'" x2="'+cx.toFixed(1)+'" y2="'+(MT+IH)+'"/>';
+  if(!maskEmpty || row[1] > 0){
+    var cy = yOf(Math.min(row[valIdx], yMax));
+    s += '<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="4.5" fill="'+color+'" stroke="var(--surface)" stroke-width="2"/>';
+  }
+  svg.innerHTML = s;
+}
+
+// ---- render -------------------------------------------------------------
+function render(){
+  var rows = D[cur], r = rows[idx];
+  var t = r[0], apr = r[1], mora = r[2], rec = r[3], pre = r[4];
+  var none = apr <= 0;
+
+  $("thr-val").textContent = t.toFixed(3);
+
+  $("t-apr").textContent = pct(apr);
+  $("t-apr-sub").textContent = none ? "no se aprueba a nadie"
+      : (apr >= 0.999 ? "se aprueba a todos" : "de cada 100 solicitudes, " + Math.round(apr*100) + " pasan");
+
+  var moraEl = $("t-mora");
+  moraEl.className = "v mono" + (none ? "" : (mora < MB ? " good" : " bad"));
+  moraEl.textContent = none ? "—" : pct(mora,2);
+  $("t-mora-sub").textContent = none ? "sin cartera que evaluar"
+      : (mora < MB ? "−" + ((MB-mora)*100).toFixed(2) + " pp frente al 9.15% sin modelo"
+                   : "+" + ((mora-MB)*100).toFixed(2) + " pp frente al 9.15% sin modelo");
+
+  $("t-rec").textContent = pct(rec,1);
+  $("t-rec-sub").textContent = "de los morosos reales quedan fuera";
+
+  $("t-pre").textContent = pct(pre,1);
+  $("t-pre-sub").textContent = "de los rechazados sí habrían caído en mora";
+
+  draw($("chart-apr"),  rows, 1, 1.0,  function(v){ return Math.round(v*100)+"%"; }, null, "var(--accent)");
+  draw($("chart-mora"), rows, 2, 0.12, function(v){ return (v*100).toFixed(0)+"%"; }, MB, "var(--bad)", true);
+
+  var vol = Math.max(1, Number($("vol").value) || 0);
+  var nApr = vol*apr, nMora = nApr*mora;
+  var totalBad = vol*MB;
+  $("v-apr").textContent  = none ? "0" : thousands(nApr);
+  $("v-mora").textContent = none ? "0" : thousands(nMora);
+  $("v-evit").textContent = thousands(totalBad - nMora);
+}
+
+// ---- events -------------------------------------------------------------
+$("thr").addEventListener("input", function(e){ idx = Number(e.target.value); render(); });
+$("vol").addEventListener("input", render);
+function renderPresets(){
+  var host = $("presets");
+  host.innerHTML = "";
+  REFS[cur].forEach(function(ref){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "preset";
+    b.innerHTML = ref.l + ' <span class="mono">' + ref.t.toFixed(4) + '</span>';
+    b.addEventListener("click", function(){
+      idx = nearestIdx(D[cur], ref.t);
+      $("thr").value = String(idx);
+      render();
+    });
+    host.appendChild(b);
+  });
+}
+function setModel(m){
+  cur = m;
+  $("btn-v1").setAttribute("aria-pressed", String(m === "v1"));
+  $("btn-v2").setAttribute("aria-pressed", String(m === "v2"));
+  idx = nearestIdx(D[m], m === "v1" ? 0.1296 : 0.3350);
+  $("thr").value = String(idx);
+  renderPresets();
+  render();
+}
+$("btn-v1").addEventListener("click", function(){ setModel("v1"); });
+$("btn-v2").addEventListener("click", function(){ setModel("v2"); });
+
+renderPresets();
+render();
+})();
+</script>
+
+</body>
+</html>

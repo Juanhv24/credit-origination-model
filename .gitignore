@@ -1,0 +1,19 @@
+# ---------------------------------------------------------------
+# Datos propietarios: no se distribuyen con el repositorio.
+# El notebook espera estos archivos en bases_datos/ para ejecutarse.
+# ---------------------------------------------------------------
+bases_datos/
+*.xlsx
+*.xls
+*.csv
+
+# Material y entregables originales del proceso: nunca se publican
+_entregables_originales/
+*.docx
+*.pptx
+
+# Artefactos locales
+.ipynb_checkpoints/
+__pycache__/
+.venv/
+venv/
